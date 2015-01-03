@@ -27,7 +27,7 @@ func main() {
 		res.Header().Set("Content-Length", fmt.Sprintf("%d", installScript.Len()))
 		res.Header().Set("Content-Type", "text/plain")
 		scriptLock.Lock()
-		io.Copy(res, installScript)
+		res.Write(installScript.Bytes())
 		scriptLock.Unlock()
 	})
 
