@@ -12,6 +12,8 @@ import (
 )
 
 var (
+	versionURL       = "https://raw.githubusercontent.com/Scalingo/appsdeck-executables/master/latest"
+	version          = &bytes.Buffer{}
 	installScriptURL = "https://raw.githubusercontent.com/Scalingo/cli/master/dists/install.sh"
 	installScript    = &bytes.Buffer{}
 	initOnce         = &sync.Once{}
@@ -21,6 +23,14 @@ var (
 func main() {
 	scriptReady := make(chan struct{})
 	go scriptUpdater(scriptReady)
+	http.HandleFunc("/version", func(res http.ResponseWriter, req *http.Request) {
+		<-scriptReady
+		res.Header().Set("Content-Length", fmt.Sprintf("%d", version.Len()))
+		res.Header().Set("Content-Type", "text/plain")
+		scriptLock.Lock()
+		res.Write(version.Bytes())
+		scriptLock.Unlock()
+	})
 	http.HandleFunc("/", func(res http.ResponseWriter, req *http.Request) {
 		<-scriptReady
 		res.WriteHeader(200)
@@ -42,7 +52,8 @@ func main() {
 func scriptUpdater(done chan struct{}) {
 	timer := time.NewTimer(time.Hour)
 	for {
-		scriptUpdate()
+		go update(installScript, installScriptURL)
+		go update(version, versionURL)
 		initOnce.Do(func() {
 			close(done)
 		})
@@ -50,20 +61,19 @@ func scriptUpdater(done chan struct{}) {
 	}
 }
 
-func scriptUpdate() {
-	req, err := http.Get(installScriptURL)
+func update(buf *bytes.Buffer, u string) {
+	req, err := http.Get(u)
 	if err != nil {
 		log.Println("http get error:", err)
 		return
 	}
 	defer req.Body.Close()
-	installScript.Reset()
+	buf.Reset()
 	scriptLock.Lock()
-	n, err := io.Copy(installScript, req.Body)
+	_, err = io.Copy(buf, req.Body)
 	scriptLock.Unlock()
 	if err != nil {
 		log.Println("Copy error:", err)
 		return
 	}
-	log.Println("New install script length", n)
 }
