@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	versionURL       = "https://raw.githubusercontent.com/Scalingo/appsdeck-executables/master/latest"
+	versionURL       = "https://raw.githubusercontent.com/Scalingo/cli/master/VERSION"
 	version          = &bytes.Buffer{}
 	installScriptURL = "https://raw.githubusercontent.com/Scalingo/cli/master/dists/install.sh"
 	installScript    = &bytes.Buffer{}
