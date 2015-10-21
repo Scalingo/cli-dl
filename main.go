@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
 	"time"
 )
@@ -40,6 +41,48 @@ func main() {
 		res.Write(installScript.Bytes())
 		scriptLock.Unlock()
 	})
+	http.HandleFunc("/release/", func(res http.ResponseWriter, req *http.Request) {
+		<-scriptReady
+		reqArchive := ""
+		reqVersion := ""
+
+		fmt.Sscanf(req.URL.Path, "/release/%s", &reqArchive)
+		reqArchive = strings.Replace(reqArchive, "latest", strings.TrimRight(version.String(), "\n"), 1)
+
+		sequences := strings.Split(reqArchive, "_")
+		if len(sequences) != 4 {
+			writeShortResponse(res, http.StatusNotFound, "Not found")
+			return
+		}
+
+		reqVersion = sequences[1]
+		if reqArchive == "" || reqVersion == "" {
+			writeShortResponse(res, http.StatusNotFound, "Not found")
+			return
+		}
+
+		archiveUrl := fmt.Sprintf("https://github.com/Scalingo/cli/releases/download/%s/%s", reqVersion, reqArchive)
+
+		githubRes, err := http.Get(archiveUrl)
+		if err != nil {
+			log.Println("http get error:", err)
+			writeShortResponse(res, http.StatusBadRequest, "Bad request")
+			return
+		}
+		defer githubRes.Body.Close()
+
+		if githubRes.StatusCode != http.StatusOK {
+			writeShortResponse(res, http.StatusBadRequest, "Bad request")
+			return
+		}
+
+		_, err = io.Copy(res, githubRes.Body)
+		if err != nil {
+			log.Println("io.Copy error:", err)
+			writeShortResponse(res, http.StatusInternalServerError, "Internal error")
+			return
+		}
+	})
 
 	port := "4000"
 	if os.Getenv("PORT") != "" {
@@ -47,6 +90,13 @@ func main() {
 	}
 	fmt.Printf("Listen on 0.0.0.0:%s\n", port)
 	http.ListenAndServe(":"+port, nil)
+}
+
+func writeShortResponse(res http.ResponseWriter, code int, content string) {
+	res.WriteHeader(code)
+	if content != "" {
+		res.Write([]byte(content))
+	}
 }
 
 func scriptUpdater(done chan struct{}) {
