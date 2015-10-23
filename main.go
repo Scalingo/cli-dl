@@ -76,8 +76,8 @@ func main() {
 			return
 		}
 
-		res.Header().Set("Content-Type", req.Header.Get("Content-Type"))
-		res.Header().Set("Content-Length", req.Header.Get("Content-Length"))
+		res.Header().Set("Content-Type", githubRes.Header.Get("Content-Type"))
+		res.Header().Set("Content-Length", githubRes.Header.Get("Content-Length"))
 		_, err = io.Copy(res, githubRes.Body)
 		if err != nil {
 			log.Println("io.Copy error:", err)
