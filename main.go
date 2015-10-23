@@ -16,6 +16,7 @@ var (
 	versionURL       = "https://raw.githubusercontent.com/Scalingo/cli/master/VERSION"
 	version          = &bytes.Buffer{}
 	installScriptURL = "https://raw.githubusercontent.com/Scalingo/cli/master/dists/install.sh"
+	ghReleaseURL     = "https://github.com/Scalingo/cli/releases/download/%s/%s"
 	installScript    = &bytes.Buffer{}
 	initOnce         = &sync.Once{}
 	scriptLock       = &sync.Mutex{}
@@ -60,8 +61,7 @@ func main() {
 			writeShortResponse(res, http.StatusNotFound, "Not found")
 			return
 		}
-
-		archiveUrl := fmt.Sprintf("https://github.com/Scalingo/cli/releases/download/%s/%s", reqVersion, reqArchive)
+		archiveUrl := fmt.Sprintf(ghReleaseURL, reqVersion, reqArchive)
 
 		githubRes, err := http.Get(archiveUrl)
 		if err != nil {
@@ -76,11 +76,12 @@ func main() {
 			return
 		}
 
+		res.Header().Set("Content-Type", req.Header.Get("Content-Type"))
+		res.Header().Set("Content-Length", req.Header.Get("Content-Length"))
 		_, err = io.Copy(res, githubRes.Body)
 		if err != nil {
 			log.Println("io.Copy error:", err)
 			writeShortResponse(res, http.StatusInternalServerError, "Internal error")
-			return
 		}
 	})
 
