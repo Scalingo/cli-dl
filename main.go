@@ -52,13 +52,13 @@ func main() {
 
 		sequences := strings.Split(reqArchive, "_")
 		if len(sequences) != 4 {
-			writeShortResponse(res, http.StatusNotFound, "Not found")
+			writeShortResponse(res, http.StatusNotFound)
 			return
 		}
 
 		reqVersion = sequences[1]
 		if reqArchive == "" || reqVersion == "" {
-			writeShortResponse(res, http.StatusNotFound, "Not found")
+			writeShortResponse(res, http.StatusNotFound)
 			return
 		}
 		archiveUrl := fmt.Sprintf(ghReleaseURL, reqVersion, reqArchive)
@@ -66,22 +66,23 @@ func main() {
 		githubRes, err := http.Get(archiveUrl)
 		if err != nil {
 			log.Println("http get error:", err)
-			writeShortResponse(res, http.StatusBadRequest, "Bad request")
+			writeShortResponse(res, http.StatusBadRequest)
 			return
 		}
 		defer githubRes.Body.Close()
 
 		if githubRes.StatusCode != http.StatusOK {
-			writeShortResponse(res, http.StatusBadRequest, "Bad request")
+			writeShortResponse(res, githubRes.StatusCode)
 			return
 		}
 
 		res.Header().Set("Content-Type", githubRes.Header.Get("Content-Type"))
 		res.Header().Set("Content-Length", githubRes.Header.Get("Content-Length"))
+
 		_, err = io.Copy(res, githubRes.Body)
 		if err != nil {
 			log.Println("io.Copy error:", err)
-			writeShortResponse(res, http.StatusInternalServerError, "Internal error")
+			writeShortResponse(res, http.StatusInternalServerError)
 		}
 	})
 
@@ -93,11 +94,9 @@ func main() {
 	http.ListenAndServe(":"+port, nil)
 }
 
-func writeShortResponse(res http.ResponseWriter, code int, content string) {
+func writeShortResponse(res http.ResponseWriter, code int) {
 	res.WriteHeader(code)
-	if content != "" {
-		res.Write([]byte(content))
-	}
+	res.Write([]byte(http.StatusText(code)))
 }
 
 func scriptUpdater(done chan struct{}) {
