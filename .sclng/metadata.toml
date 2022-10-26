@@ -1,5 +1,5 @@
 dependencies = []
-description = "HTTP server that handle the download of the Scalingo CLI"
+description = "HTTP server that handles the download of the Scalingo CLI"
 destination_server = ["scalingo-platform"]
 flags = ["scalingo-app"]
 languages = ["go"]
