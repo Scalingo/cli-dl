@@ -76,9 +76,9 @@ func main() {
 			writeShortResponse(res, http.StatusNotFound)
 			return
 		}
-		archiveUrl := fmt.Sprintf(ghReleaseURL, reqVersion, reqArchive)
+		archiveURL := fmt.Sprintf(ghReleaseURL, reqVersion, reqArchive)
 
-		githubRes, err := http.Get(archiveUrl)
+		githubRes, err := http.Get(archiveURL)
 		if err != nil {
 			log.Println("http get error:", err)
 			writeShortResponse(res, http.StatusBadRequest)
