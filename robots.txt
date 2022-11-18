@@ -1,0 +1,3 @@
+# no page on this site should be indexed
+User-agent: *
+Disallow: /
