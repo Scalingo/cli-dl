@@ -1,0 +1,12 @@
+version: '2'
+services:
+  web:
+    build: .
+    volumes:
+      - ./:/go/src/github.com/Scalingo/cli-dl
+    ports:
+      - "20205:20205"
+    environment:
+      GO_ENV: development
+      LOGGER_LEVEL: debug
+    command: reflex -r '\.go$$' --inverse-regex='_test\.go$$' --inverse-regex='factory\.go' -s -- sh -c 'go install && /go/bin/cli-dl'

@@ -25,6 +25,21 @@ var (
 func main() {
 	scriptReady := make(chan struct{})
 	go scriptUpdater(scriptReady)
+
+	http.HandleFunc("/robots.txt", func(res http.ResponseWriter, req *http.Request) {
+		fileBytes, err := os.ReadFile("robots.txt")
+		if err != nil {
+			res.WriteHeader(500)
+			return
+		}
+		res.WriteHeader(200)
+		res.Header().Add("Content-Type", "text/plain")
+		_, err = res.Write(fileBytes)
+		if err != nil {
+			res.WriteHeader(500)
+			return
+		}
+	})
 	http.HandleFunc("/version", func(res http.ResponseWriter, req *http.Request) {
 		<-scriptReady
 		res.Header().Set("Content-Length", fmt.Sprintf("%d", version.Len()))
@@ -61,9 +76,9 @@ func main() {
 			writeShortResponse(res, http.StatusNotFound)
 			return
 		}
-		archiveUrl := fmt.Sprintf(ghReleaseURL, reqVersion, reqArchive)
+		archiveURL := fmt.Sprintf(ghReleaseURL, reqVersion, reqArchive)
 
-		githubRes, err := http.Get(archiveUrl)
+		githubRes, err := http.Get(archiveURL)
 		if err != nil {
 			log.Println("http get error:", err)
 			writeShortResponse(res, http.StatusBadRequest)
@@ -86,7 +101,7 @@ func main() {
 		}
 	})
 
-	port := "4000"
+	port := "20205"
 	if os.Getenv("PORT") != "" {
 		port = os.Getenv("PORT")
 	}
